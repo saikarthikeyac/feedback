@@ -10,6 +10,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const BOOKING_SYNC_KEY = process.env.BOOKING_SYNC_KEY || '';
+
+function requireSyncKey(req, res, next) {
+  const provided = req.get('X-Booking-Sync-Key') || '';
+  if (!BOOKING_SYNC_KEY || provided !== BOOKING_SYNC_KEY) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  next();
+}
+
 // PostgreSQL Connection Pool (will use Render PostgreSQL in production)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://postgres:root123@localhost:5433/feedbackdb',
@@ -50,7 +60,7 @@ const pool = new Pool({
 // ============================================
 
 // Register/sync a booking from the local booking-service
-app.post('/api/bookings/register', async (req, res) => {
+app.post('/api/bookings/register', requireSyncKey, async (req, res) => {
   try {
     const {
       bookingId,
