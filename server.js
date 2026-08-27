@@ -17,6 +17,33 @@ const pool = new Pool({
     ? { rejectUnauthorized: false }
     : false
 });
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        booking_id VARCHAR(255) UNIQUE NOT NULL,
+        technician_id INTEGER,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_email VARCHAR(255),
+        appointment_date TIMESTAMP,
+        work_type VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'CONFIRMED',
+        tracking_token VARCHAR(255) UNIQUE NOT NULL,
+        rating INTEGER,
+        feedback TEXT,
+        rated_at TIMESTAMP,
+        cancelled_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log("✅ bookings table verified");
+  } catch (err) {
+    console.error("Table creation failed:", err);
+  }
+})();
 
 // ============================================
 // FEEDBACK API ENDPOINTS
