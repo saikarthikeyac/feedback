@@ -160,20 +160,23 @@ app.post('/api/bookings/track/:token/rate', async (req, res) => {
     const { token } = req.params;
     const { rating, feedback } = req.body;
 
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be an integer between 1 and 5' });
+    }
+    if (feedback && String(feedback).length > 2000) {
+      return res.status(400).json({ message: 'Feedback must be 2000 characters or fewer' });
     }
 
     const result = await pool.query(
       `UPDATE bookings 
        SET rating = $1, feedback = $2, rated_at = NOW() 
-       WHERE tracking_token = $3 
+       WHERE tracking_token = $3 AND status = 'COMPLETED'
        RETURNING *`,
       [rating, feedback || '', token]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Booking not found' });
+      return res.status(409).json({ message: 'Rating is only allowed after job completion' });
     }
 
     res.json(result.rows[0]);
@@ -191,13 +194,13 @@ app.post('/api/bookings/track/:token/cancel', async (req, res) => {
     const result = await pool.query(
       `UPDATE bookings 
        SET status = 'CANCELLED', cancelled_at = NOW() 
-       WHERE tracking_token = $1 AND status != 'COMPLETED'
+       WHERE tracking_token = $1 AND status = 'CONFIRMED'
        RETURNING *`,
       [token]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Booking not found or already completed' });
+      return res.status(409).json({ message: 'Booking not found or cannot be cancelled in its current status' });
     }
 
     res.json(result.rows[0]);
