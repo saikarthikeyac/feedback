@@ -1,7 +1,7 @@
-import express from 'express';
 import cors from 'cors';
-import { Pool } from 'pg';
+import express from 'express';
 import path from 'path';
+import { Pool } from 'pg';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,7 +12,10 @@ app.use(express.json());
 
 // PostgreSQL Connection Pool (will use Render PostgreSQL in production)
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:root123@localhost:5433/feedbackdb'
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:root123@localhost:5433/feedbackdb',
+  ssl: process.env.DATABASE_URL
+    ? { rejectUnauthorized: false }
+    : false
 });
 
 // ============================================
