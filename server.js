@@ -1,7 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import { Pool } from 'pg';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
