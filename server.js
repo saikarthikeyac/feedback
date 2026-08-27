@@ -49,6 +49,81 @@ const pool = new Pool({
 // FEEDBACK API ENDPOINTS
 // ============================================
 
+// Register/sync a booking from the local booking-service
+app.post('/api/bookings/register', async (req, res) => {
+  try {
+    const {
+      bookingId,
+      technicianId,
+      customerName,
+      customerEmail,
+      appointmentDate,
+      workType,
+      status,
+      trackingToken
+    } = req.body;
+
+    if (!bookingId || !customerName || !trackingToken) {
+      return res.status(400).json({
+        message: 'bookingId, customerName and trackingToken are required'
+      });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO bookings (
+        booking_id,
+        technician_id,
+        customer_name,
+        customer_email,
+        appointment_date,
+        work_type,
+        status,
+        tracking_token
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+
+      ON CONFLICT (tracking_token)
+      DO UPDATE SET
+        booking_id = EXCLUDED.booking_id,
+        technician_id = EXCLUDED.technician_id,
+        customer_name = EXCLUDED.customer_name,
+        customer_email = EXCLUDED.customer_email,
+        appointment_date = EXCLUDED.appointment_date,
+        work_type = EXCLUDED.work_type,
+        status = EXCLUDED.status,
+        updated_at = NOW()
+
+      RETURNING *
+      `,
+      [
+        String(bookingId),
+        technicianId || null,
+        customerName,
+        customerEmail || null,
+        appointmentDate || null,
+        workType || null,
+        status || 'CONFIRMED',
+        trackingToken
+      ]
+    );
+
+    console.log(
+      `Booking registered in Render DB: ${bookingId}, token: ${trackingToken}`
+    );
+
+    return res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Booking registration failed:', err);
+    return res.status(500).json({
+      message: 'Failed to register booking'
+    });
+  }
+});
+
+
+
+
 // 1. Get booking by tracking token (public)
 app.get('/api/bookings/track/:token', async (req, res) => {
   try {
